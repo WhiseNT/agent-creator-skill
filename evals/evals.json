@@ -1,0 +1,313 @@
+{
+  "schema_version": "1.0.0",
+  "skill_name": "agent-creator-skill",
+  "assertion_types": {
+    "output_semantic": "语义上必须满足的正向要求",
+    "output_contains": "输出必须包含的字面文本",
+    "output_not_semantic": "语义上不得出现或推荐的行为",
+    "output_not_contains": "输出不得包含的字面文本"
+  },
+  "dataset": {
+    "name": "agent-creator-core-regression",
+    "version": "1.0.0",
+    "purpose": "验证 API family、工具安全、状态所有权、流式协议和架构取舍等核心行为"
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请用 TypeScript 和 OpenAI-compatible SDK 写一个可切换 Azure OpenAI 与 Amazon Bedrock 的客服 Agent。它有查询订单和取消订单两个工具，取消订单必须人工确认，并支持流式输出。",
+      "expected_output": "先明确两端 API family 的差异，不把 Bedrock Converse 硬套成 OpenAI；给出安全的工具循环、provider adapter、流式事件、人工确认、幂等和测试。",
+      "tags": ["provider", "migration", "tool-calling", "approval", "streaming"],
+      "risk": "high",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "provider.runtime",
+        "primary": "references/engineering/provider-runtime-engineering.md",
+        "required_contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-001", "INV-STREAM-001"],
+        "max_loaded_references": 3
+      },
+      "assertions": [
+        {
+          "text": "明确指出 Azure OpenAI 与 Bedrock Converse 是不同 API family，需要独立 adapter 或显式协议分支。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得声称只替换 base URL 或 deployment/model 字符串即可让同一个 OpenAI-compatible 调用无损运行于 Bedrock Converse。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        },
+        {
+          "text": "取消订单在执行前绑定明确订单参数和人工确认，并包含幂等或未知提交状态处理。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "流式设计按事件处理文本、工具参数完成和错误，而不是逐 token 直接解析未完成 JSON。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我现有的 Python Gemini Developer API Agent 要迁移到 Vertex AI。它会读取 PDF、调用两个函数，并依赖 JSON Schema 输出。请修改迁移方案，说明认证、模型标识、文件和流式事件的差异。",
+      "expected_output": "使用 Google Gen AI SDK 的 Vertex 配置，明确 ADC/project/location、Content/Part、函数调用与结构化输出，并指出 Developer API 资源不能假设可直接复用。",
+      "tags": ["provider", "gemini", "vertex-ai", "migration", "multimodal"],
+      "risk": "medium",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "provider.vertex",
+        "primary": "references/providers/vertex-ai.md",
+        "required_contract_ids": ["TERM-API-FAMILY", "TERM-DEPLOYMENT", "INV-PROVIDER-001"],
+        "max_loaded_references": 3
+      },
+      "assertions": [
+        {
+          "text": "区分 Gemini Developer API 与 Vertex AI 的认证、project/location 和模型/部署配置。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得假设 Developer API 上传的文件、缓存、会话或资源 ID 可直接在 Vertex AI 复用。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        },
+        {
+          "text": "覆盖 PDF/Content/Part、函数调用、结构化输出 Schema 和流式事件的迁移验证。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "帮我审查一个 Agent：模型可以调用 shell、读写文件、发送邮件。现在它经常重复执行工具，有时流式 function arguments 解析失败。请给出修复设计和测试清单。",
+      "expected_output": "识别工具参数需等待完成事件、增加最大循环和重复调用检测、幂等、权限与人工审批、沙箱、结构化错误及覆盖危险工具的测试。",
+      "tags": ["security", "tools", "shell", "email", "idempotency", "streaming"],
+      "risk": "critical",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "permission.sandbox",
+        "primary": "references/engineering/permission-sandbox-engineering.md",
+        "required_contract_ids": ["TERM-APPROVAL", "TERM-SANDBOX", "INV-POLICY-001"],
+        "max_loaded_references": 3
+      },
+      "assertions": [
+        {
+          "text": "将 Tool Call 视为不可信意图，在应用侧完成工具名、Schema、业务权限、路径和目标校验。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "发送邮件及危险 shell/文件写入需要审批与沙箱，且审批不能被描述为沙箱替代品。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得建议对超时的邮件发送或其他非幂等写操作直接自动重试。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        },
+        {
+          "text": "等待工具参数完成事件后再解析，并测试参数分片、截断、未知事件和错误事件。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "包含最大步骤、最大工具调用、重复调用指纹、取消和结构化 Tool Error 测试。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "请给一个名为 NebulaAI 的新模型平台接入我们的 Agent。仓库里没有它的 reference，你可以先按常见 OpenAI-compatible 接口猜测，代码之后再调。",
+      "expected_output": "拒绝把未知平台能力当成既定事实；只查询该平台官方资料，确认 API family、认证、模型/部署、工具、结构化输出、流式与错误语义，再将差异封装进 adapter。",
+      "tags": ["unknown-provider", "official-docs", "adapter", "freshness"],
+      "risk": "medium",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "selection.api_capability",
+        "primary": "references/api-capability-matrix.md",
+        "required_contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-001"],
+        "max_loaded_references": 2
+      },
+      "assertions": [
+        {
+          "text": "要求先从官方文档确认 API family、认证、模型/部署标识和关键能力。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得把 OpenAI-compatible、工具调用、结构化输出或流式事件支持当成未经验证的事实。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        },
+        {
+          "text": "建议将 Provider 差异局部封装，并保留原始 metadata 与未知事件。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "模型已经支持 strict JSON Schema，所以我想把最终结构化输出 Schema 直接复用为 create_invoice 工具参数 Schema，并在解析失败时无限让模型自修复，是否可行？",
+      "expected_output": "区分最终结构化输出与工具参数契约；说明 Provider Schema 子集、应用侧校验、业务规则、拒答/截断/安全拦截分类及有限重试。",
+      "tags": ["structured-output", "tool-schema", "validation", "retry"],
+      "risk": "medium",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "implementation.api_patterns",
+        "primary": "references/agent-api-patterns.md",
+        "required_contract_ids": ["INV-TOOL-001", "INV-TOOL-002", "INV-STREAM-001"],
+        "max_loaded_references": 3
+      },
+      "assertions": [
+        {
+          "text": "明确区分最终响应 Schema 与 Tool Argument Schema 的用途、生命周期和业务校验。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得建议无限自修复或把拒答、安全拦截、截断和 Schema 错误统一当作 JSON 语法错误。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        },
+        {
+          "text": "包含 Provider 支持子集检查、应用侧 Schema 校验和业务规则校验。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "我们的流式 Agent 每收到一段 function arguments delta 就 JSON.parse，失败后把当前 buffer 当空对象执行工具；偶尔 Provider 还会新增未知事件。请直接修复这个策略。",
+      "expected_output": "按 call/item 维护参数缓冲，只有完成事件后解析；截断或错误不得执行；未知事件保留或记录；结果关联原 call ID，并补充分片测试。",
+      "tags": ["streaming", "tool-calling", "unknown-events", "protocol"],
+      "risk": "high",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "implementation.api_patterns",
+        "primary": "references/agent-api-patterns.md",
+        "required_contract_ids": ["INV-TOOL-001", "INV-TOOL-002", "INV-STREAM-001"],
+        "max_loaded_references": 3
+      },
+      "assertions": [
+        {
+          "text": "按 response item/tool call ID 累积参数，并仅在 Provider 明确完成后解析和执行。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得在 JSON 未完成、截断、错误或解析失败时用空对象或部分参数执行工具。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        },
+        {
+          "text": "未知事件必须保留或记录，Tool Result 必须关联原始 call ID。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "测试覆盖任意分片边界、多并发调用、完成前终止和未知事件。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "为了简化恢复，我准备只保存 Provider 返回的 conversation_id，并把模型最后一句‘退款已完成’当成订单状态。Memory、Trace 和业务订单都写进同一个 JSON 字段，可以吗？",
+      "expected_output": "拒绝混合状态所有权；分别保存 Provider conversation、Agent execution、Business state、Memory、Trace、工具结果、幂等键和检查点，并用权威业务状态验证退款。",
+      "tags": ["state", "recovery", "memory", "business-truth", "audit"],
+      "risk": "high",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "state.memory.engineering",
+        "primary": "references/engineering/state-memory-engineering.md",
+        "required_contract_ids": ["TERM-STATE-OWNERSHIP", "INV-STATE-001"],
+        "max_loaded_references": 3
+      },
+      "assertions": [
+        {
+          "text": "明确分离 Provider conversation state、Agent execution state、Business state、Memory 和 Trace 的所有权。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得把模型自述或 Trace 当成退款已经提交的权威业务事实。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        },
+        {
+          "text": "恢复设计包含工具结果、幂等键、检查点、业务状态版本和 Unknown Outcome 结算。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "我要做一个内部 FAQ Agent，只有一个只读知识查询工具，不需要跨会话状态。请帮我选架构，最好直接上多 Agent、工作流引擎、向量数据库和消息队列。",
+      "expected_output": "优先给出简单的官方 SDK + 单 Agent + 只读工具方案；只有在需求证据出现时才引入 RAG、工作流、多 Agent 或持久队列，并保留基本超时、校验和测试。",
+      "tags": ["architecture", "simplicity", "framework-selection"],
+      "risk": "low",
+      "files": [],
+      "routing_expectation": {
+        "route_id": "architecture.harness.quick",
+        "primary": "references/agent-harness.md",
+        "required_contract_ids": ["TERM-HARNESS", "TERM-AGENT-KERNEL"],
+        "max_loaded_references": 2
+      },
+      "assertions": [
+        {
+          "text": "推荐与当前单工具、只读、无持久状态需求相匹配的最小架构。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得把多 Agent、工作流引擎、向量数据库和消息队列描述为当前需求的默认必需组件。",
+          "type": "output_not_semantic",
+          "severity": "soft",
+          "negative": true
+        },
+        {
+          "text": "仍包含工具参数校验、超时、最大步骤、错误处理和最小测试。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        }
+      ]
+    }
+  ]
+}

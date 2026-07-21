@@ -1,0 +1,544 @@
+{
+  "schema_version": "1.0.0",
+  "defaults": {
+    "canonical_contract": "references/canonical-contract.md",
+    "contract_version": "1.0.0",
+    "max_primary": 1,
+    "max_supplements": 2,
+    "selection_order": ["exclude_negative_matches", "exact_intent_matches", "positive_signal_matches", "priority", "longest_signal", "route_id"],
+    "expand_only_for": ["cross_module_design", "architecture_review", "incident_investigation"],
+    "coverage_exempt": ["references/canonical-contract.md", "references/engineering/index.md"]
+  },
+  "routes": [
+    {
+      "id": "architecture.reference",
+      "intents": ["design_agent", "review_architecture", "build_agent_platform"],
+      "positive_signals": ["完整 Agent", "参考架构", "跨模块架构", "Agent 平台架构", "重构整个 Agent 系统"],
+      "negative_signals": ["只需 harness 快速清单", "只实现 harness 模块", "只修一个工具参数", "只查单个 API 字段"],
+      "primary": "references/agent-reference-architecture.md",
+      "supplements": ["references/engineering/harness-engineering.md", "references/agent-api-patterns.md"],
+      "contract_ids": ["TERM-AGENT-KERNEL", "TERM-HARNESS", "INV-STATE-001"],
+      "priority": 100
+    },
+    {
+      "id": "architecture.harness.quick",
+      "intents": ["understand_harness", "quick_architecture_checklist"],
+      "positive_signals": ["harness 组成", "快速清单", "运行外壳", "最小架构", "单 Agent 架构"],
+      "negative_signals": ["模块级详细设计"],
+      "primary": "references/agent-harness.md",
+      "supplements": ["references/agent-reference-architecture.md"],
+      "contract_ids": ["TERM-HARNESS", "TERM-AGENT-KERNEL"],
+      "priority": 90
+    },
+    {
+      "id": "implementation.api_patterns",
+      "intents": ["implement_tool_loop", "debug_agent_loop", "structured_output", "streaming"],
+      "positive_signals": ["工具循环", "function calling", "流式参数", "结构化输出", "重试"],
+      "negative_signals": ["指定 Provider 完整协议"],
+      "primary": "references/agent-api-patterns.md",
+      "supplements": ["references/engineering/tool-engineering.md", "references/engineering/provider-runtime-engineering.md"],
+      "contract_ids": ["INV-TOOL-001", "INV-TOOL-002", "INV-STREAM-001"],
+      "priority": 95
+    },
+    {
+      "id": "selection.api_capability",
+      "intents": ["select_provider", "compare_api", "design_provider_adapter"],
+      "positive_signals": ["接口选型", "能力矩阵", "Provider 对比", "选择哪个 API family", "未知 Provider 能力确认"],
+      "negative_signals": ["实现 provider adapter", "运行时重试", "流式归一化", "只查价格", "只查当前模型列表"],
+      "primary": "references/api-capability-matrix.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md"],
+      "contract_ids": ["TERM-API-FAMILY", "TERM-PROVIDER", "TERM-DEPLOYMENT", "INV-PROVIDER-001"],
+      "priority": 95
+    },
+    {
+      "id": "prompt.engineering",
+      "intents": ["design_system_prompt", "tool_description", "output_contract"],
+      "positive_signals": ["system prompt", "工具描述", "模式提示", "输出契约"],
+      "negative_signals": ["RAG 索引", "Provider 协议"],
+      "primary": "references/engineering/prompt-engineering.md",
+      "supplements": ["references/engineering/context-engineering.md"],
+      "contract_ids": ["INV-TOOL-001", "INV-SECURITY-001"],
+      "priority": 80
+    },
+    {
+      "id": "context.engineering",
+      "intents": ["design_context", "rag_context", "compaction", "long_session"],
+      "positive_signals": ["上下文", "RAG", "compaction", "长会话", "附件选择"],
+      "negative_signals": ["长期记忆产品控制"],
+      "primary": "references/engineering/context-engineering.md",
+      "supplements": ["references/engineering/state-memory-engineering.md", "references/engineering/prompt-engineering.md"],
+      "contract_ids": ["TERM-STATE-OWNERSHIP", "INV-STATE-001", "INV-SECURITY-001"],
+      "priority": 80
+    },
+    {
+      "id": "harness.engineering",
+      "intents": ["implement_harness", "runtime_assembly", "plugin_runtime"],
+      "positive_signals": ["runtime 装配", "Harness", "plugin", "host", "session runtime"],
+      "negative_signals": ["只写最小工具循环"],
+      "primary": "references/engineering/harness-engineering.md",
+      "supplements": ["references/agent-reference-architecture.md", "references/engineering/event-observability-engineering.md"],
+      "contract_ids": ["TERM-HARNESS", "TERM-AGENT-KERNEL", "TERM-CANONICAL-EVENT"],
+      "priority": 90
+    },
+    {
+      "id": "tool.engineering",
+      "intents": ["design_tools", "mcp_tools", "tool_scheduler", "idempotency"],
+      "positive_signals": ["工具 schema", "MCP", "工具调度", "幂等", "资源锁"],
+      "negative_signals": ["Provider 原始流事件"],
+      "primary": "references/engineering/tool-engineering.md",
+      "supplements": ["references/agent-api-patterns.md", "references/engineering/permission-sandbox-engineering.md"],
+      "contract_ids": ["TERM-TOOL-CALL", "TERM-TOOL-EXECUTION", "INV-TOOL-001", "INV-TOOL-003", "INV-TOOL-004"],
+      "priority": 90
+    },
+    {
+      "id": "state.memory.engineering",
+      "intents": ["session_state", "checkpoint", "transcript", "memory_runtime"],
+      "positive_signals": ["session", "transcript", "checkpoint", "event state", "schema migration"],
+      "negative_signals": ["用户可见记忆产品", "DSAR 运营"],
+      "primary": "references/engineering/state-memory-engineering.md",
+      "supplements": ["references/engineering/session-replay-engineering.md", "references/engineering/context-engineering.md"],
+      "contract_ids": ["TERM-SESSION", "TERM-STATE-OWNERSHIP", "TERM-MEMORY", "INV-STATE-001"],
+      "priority": 85
+    },
+    {
+      "id": "permission.sandbox",
+      "intents": ["permission_model", "approval", "sandbox", "prompt_injection"],
+      "positive_signals": ["权限", "审批", "sandbox", "project trust", "prompt injection"],
+      "negative_signals": ["安全事故值班运营"],
+      "primary": "references/engineering/permission-sandbox-engineering.md",
+      "supplements": ["references/engineering/tool-engineering.md", "references/engineering/security-operations-engineering.md"],
+      "contract_ids": ["TERM-POLICY", "TERM-APPROVAL", "TERM-SANDBOX", "INV-POLICY-001", "INV-SECURITY-002"],
+      "priority": 95
+    },
+    {
+      "id": "subagent.engineering",
+      "intents": ["multi_agent", "delegate_task", "background_agent"],
+      "positive_signals": ["subagent", "child run", "fan-out", "fan-in", "委派"],
+      "negative_signals": ["单 Agent 普通工具循环"],
+      "primary": "references/engineering/subagent-engineering.md",
+      "supplements": ["references/engineering/workspace-isolation-engineering.md", "references/engineering/state-memory-engineering.md"],
+      "contract_ids": ["TERM-ATTEMPT", "INV-STATE-001", "INV-SECURITY-001"],
+      "priority": 80
+    },
+    {
+      "id": "event.observability",
+      "intents": ["event_schema", "tracing", "audit", "observability"],
+      "positive_signals": ["事件 envelope", "trace", "metric", "audit", "durable stream"],
+      "negative_signals": ["只做日志格式美化"],
+      "primary": "references/engineering/event-observability-engineering.md",
+      "supplements": ["references/engineering/session-replay-engineering.md", "references/engineering/artifact-engineering.md"],
+      "contract_ids": ["TERM-CANONICAL-EVENT", "INV-EVENT-001", "INV-PROVIDER-002"],
+      "priority": 85
+    },
+    {
+      "id": "evaluation.runner",
+      "intents": ["build_eval_runner", "assertion_engine", "ci_regression", "fault_injection"],
+      "positive_signals": ["runner", "assertion", "CI gate", "fault injection", "轨迹评分"],
+      "negative_signals": ["编写测评题库", "数据集 split"],
+      "primary": "references/engineering/evaluation-engineering.md",
+      "supplements": ["references/engineering/agent-evaluation-dataset-engineering.md", "references/engineering/event-observability-engineering.md"],
+      "contract_ids": ["TERM-TRIAL", "TERM-INFRA-ERROR", "INV-EVAL-001", "INV-EVAL-002"],
+      "priority": 95
+    },
+    {
+      "id": "evaluation.dataset",
+      "intents": ["build_eval_dataset", "golden_set", "holdout", "grader_calibration"],
+      "positive_signals": ["测评集", "golden", "challenge", "holdout", "ground truth", "污染"],
+      "negative_signals": ["只实现 Runner", "只写 Assertion 执行器"],
+      "primary": "references/engineering/agent-evaluation-dataset-engineering.md",
+      "supplements": ["references/engineering/evaluation-engineering.md"],
+      "contract_ids": ["TERM-COLLECTION", "TERM-PARTITION", "TERM-TRIAL", "INV-EVAL-002", "INV-EVAL-003"],
+      "priority": 96
+    },
+    {
+      "id": "coding.agent",
+      "intents": ["build_coding_agent", "edit_repository", "code_review_agent"],
+      "positive_signals": ["coding agent", "代码库发现", "diff", "测试运行", "workspace 恢复"],
+      "negative_signals": ["普通聊天 Agent"],
+      "primary": "references/engineering/coding-agent-engineering.md",
+      "supplements": ["references/engineering/workspace-isolation-engineering.md", "references/engineering/permission-sandbox-engineering.md"],
+      "contract_ids": ["TERM-HARNESS", "TERM-ARTIFACT", "INV-TOOL-001", "INV-RECOVERY-001"],
+      "priority": 90
+    },
+    {
+      "id": "provider.runtime",
+      "intents": ["provider_adapter", "model_runtime", "provider_retry", "billing_normalization"],
+      "positive_signals": ["实现 Provider adapter", "Model/Deployment runtime", "tool calling 归一化", "流式协议适配", "运行时重试", "计费归一化"],
+      "negative_signals": ["只做接口选型", "仅做发布合规测试", "只写测试 fixture"],
+      "primary": "references/engineering/provider-runtime-engineering.md",
+      "supplements": ["references/api-capability-matrix.md", "references/engineering/provider-routing-engineering.md"],
+      "contract_ids": ["TERM-API-FAMILY", "TERM-PROVIDER", "TERM-MODEL", "TERM-DEPLOYMENT", "INV-PROVIDER-001", "INV-PROVIDER-002", "INV-STREAM-001"],
+      "priority": 95
+    },
+    {
+      "id": "artifact.engineering",
+      "intents": ["artifact_store", "large_output", "binary_delivery"],
+      "positive_signals": ["artifact", "大输出", "diff", "二进制", "range", "预览"],
+      "negative_signals": ["小型纯文本响应"],
+      "primary": "references/engineering/artifact-engineering.md",
+      "supplements": ["references/engineering/event-observability-engineering.md", "references/engineering/privacy-engineering.md"],
+      "contract_ids": ["TERM-ARTIFACT", "INV-ARTIFACT-001", "INV-PRIVACY-001"],
+      "priority": 80
+    },
+    {
+      "id": "multi_tenant.engineering",
+      "intents": ["multi_tenant_agent", "tenant_isolation", "quota_isolation"],
+      "positive_signals": ["多租户", "tenant", "workspace 隔离", "配额", "数据生命周期"],
+      "negative_signals": ["单用户本地脚本"],
+      "primary": "references/engineering/multi-tenant-engineering.md",
+      "supplements": ["references/engineering/privacy-engineering.md", "references/engineering/workspace-isolation-engineering.md"],
+      "contract_ids": ["INV-SECURITY-002", "INV-PRIVACY-001", "INV-STATE-001"],
+      "priority": 85
+    },
+    {
+      "id": "provider.routing",
+      "intents": ["route_models", "fallback", "provider_selection_runtime"],
+      "positive_signals": ["路由", "fallback", "hedging", "capability match", "quota"],
+      "negative_signals": ["静态接口选型矩阵"],
+      "primary": "references/engineering/provider-routing-engineering.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md", "references/engineering/provider-security-contract-engineering.md"],
+      "contract_ids": ["TERM-DEPLOYMENT", "INV-ROUTING-001", "INV-PROVIDER-001"],
+      "priority": 90
+    },
+    {
+      "id": "host.adapter",
+      "intents": ["cli_adapter", "ide_adapter", "http_adapter", "channel_adapter"],
+      "positive_signals": ["CLI", "TUI", "IDE", "RPC", "HTTP", "Channel", "framing"],
+      "negative_signals": ["Agent Kernel 内部循环"],
+      "primary": "references/engineering/host-adapter-engineering.md",
+      "supplements": ["references/engineering/event-observability-engineering.md", "references/engineering/agent-product-engineering.md"],
+      "contract_ids": ["TERM-CANONICAL-EVENT", "TERM-ARTIFACT", "INV-EVENT-001"],
+      "priority": 80
+    },
+    {
+      "id": "workspace.isolation",
+      "intents": ["workspace_security", "worktree", "filesystem_isolation"],
+      "positive_signals": ["workspace", "repository", "worktree", "symlink", "mount", "TOCTOU"],
+      "negative_signals": ["只讨论业务权限"],
+      "primary": "references/engineering/workspace-isolation-engineering.md",
+      "supplements": ["references/engineering/permission-sandbox-engineering.md", "references/engineering/coding-agent-engineering.md"],
+      "contract_ids": ["TERM-SANDBOX", "INV-POLICY-001", "INV-TOOL-001"],
+      "priority": 90
+    },
+    {
+      "id": "production.operations",
+      "intents": ["operate_agent_platform", "slo", "rollout", "disaster_recovery"],
+      "positive_signals": ["生产运营", "SLO", "control plane", "worker", "rollout", "DR"],
+      "negative_signals": ["单次本地实现"],
+      "primary": "references/engineering/production-operations-engineering.md",
+      "supplements": ["references/engineering/workflow-capacity-engineering.md", "references/engineering/security-operations-engineering.md"],
+      "contract_ids": ["TERM-HARNESS", "INV-RECOVERY-001", "INV-ROUTING-001"],
+      "priority": 85
+    },
+    {
+      "id": "provider.conformance",
+      "intents": ["provider_conformance", "adapter_release_gate", "capability_compliance"],
+      "positive_signals": ["conformance suite", "adapter compliance", "capability matrix", "发布门禁"],
+      "negative_signals": ["实现单个测试框架 fixture"],
+      "primary": "references/engineering/provider-runtime-conformance-engineering.md",
+      "supplements": ["references/engineering/provider-contract-testing-engineering.md", "references/engineering/provider-runtime-engineering.md"],
+      "contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-002", "INV-EVAL-002"],
+      "priority": 88
+    },
+    {
+      "id": "session.replay",
+      "intents": ["session_replay", "time_travel", "fork_session", "forensics"],
+      "positive_signals": ["replay", "time travel", "fork", "checkpoint", "projector"],
+      "negative_signals": ["只回放 Provider HTTP"],
+      "primary": "references/engineering/session-replay-engineering.md",
+      "supplements": ["references/engineering/state-memory-engineering.md", "references/engineering/event-observability-engineering.md"],
+      "contract_ids": ["TERM-SESSION", "TERM-CANONICAL-EVENT", "INV-EVENT-001", "INV-RECOVERY-001"],
+      "priority": 85
+    },
+    {
+      "id": "security.operations",
+      "intents": ["security_operations", "incident_response", "siem", "forensics"],
+      "positive_signals": ["SIEM", "安全告警", "containment", "取证", "break-glass"],
+      "negative_signals": ["只设计单次审批"],
+      "primary": "references/engineering/security-operations-engineering.md",
+      "supplements": ["references/engineering/permission-sandbox-engineering.md", "references/engineering/provider-incident-response-engineering.md"],
+      "contract_ids": ["INV-SECURITY-001", "INV-SECURITY-002", "INV-RECOVERY-001"],
+      "priority": 90
+    },
+    {
+      "id": "cost.governance",
+      "intents": ["cost_governance", "usage_ledger", "chargeback", "budget_gate"],
+      "positive_signals": ["成本", "usage ledger", "price catalog", "chargeback", "预算门禁"],
+      "negative_signals": ["只查一次价格"],
+      "primary": "references/engineering/cost-governance-engineering.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md", "references/engineering/provider-routing-engineering.md"],
+      "contract_ids": ["TERM-PROVIDER", "TERM-DEPLOYMENT", "INV-PROVIDER-002"],
+      "priority": 75
+    },
+    {
+      "id": "provider.schema_evolution",
+      "intents": ["schema_evolution", "provider_drift", "dual_read_write"],
+      "positive_signals": ["schema evolution", "migration", "provider drift", "dual-read", "dual-write"],
+      "negative_signals": ["单次请求字段查询"],
+      "primary": "references/engineering/provider-schema-evolution-engineering.md",
+      "supplements": ["references/engineering/provider-contract-testing-engineering.md", "references/engineering/data-lineage-engineering.md"],
+      "contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-002", "INV-STATE-001"],
+      "priority": 80
+    },
+    {
+      "id": "durable.queue",
+      "intents": ["durable_queue", "worker_lease", "dlq", "backpressure"],
+      "positive_signals": ["queue", "lease", "ack", "nack", "DLQ", "outbox", "backpressure"],
+      "negative_signals": ["进程内同步队列"],
+      "primary": "references/engineering/durable-queue-engineering.md",
+      "supplements": ["references/engineering/workflow-orchestration-engineering.md", "references/engineering/workflow-scheduling-engineering.md"],
+      "contract_ids": ["TERM-ATTEMPT", "INV-RECOVERY-001", "INV-WORKFLOW-001"],
+      "priority": 85
+    },
+    {
+      "id": "privacy.engineering",
+      "intents": ["privacy_design", "pii", "dsar", "data_retention"],
+      "positive_signals": ["PII", "secret", "DSAR", "DLP", "数据驻留", "删除证明"],
+      "negative_signals": ["全局数据治理目录"],
+      "primary": "references/engineering/privacy-engineering.md",
+      "supplements": ["references/engineering/data-governance-engineering.md", "references/engineering/provider-security-contract-engineering.md"],
+      "contract_ids": ["INV-PRIVACY-001", "TERM-ARTIFACT", "TERM-MEMORY"],
+      "priority": 90
+    },
+    {
+      "id": "agent.product",
+      "intents": ["agent_product_ux", "approval_ux", "task_delivery"],
+      "positive_signals": ["任务 UX", "进度", "审批体验", "通知", "反馈", "产品发布"],
+      "negative_signals": ["底层事件协议实现"],
+      "primary": "references/engineering/agent-product-engineering.md",
+      "supplements": ["references/engineering/host-adapter-engineering.md", "references/engineering/agent-memory-product-engineering.md"],
+      "contract_ids": ["TERM-APPROVAL", "TERM-ARTIFACT", "TERM-SESSION"],
+      "priority": 75
+    },
+    {
+      "id": "memory.product",
+      "intents": ["memory_product", "user_memory_controls", "memory_ui"],
+      "positive_signals": ["候选记忆", "用户确认", "查看记忆", "编辑记忆", "忘记"],
+      "negative_signals": ["底层 event state", "隐私事故运营"],
+      "primary": "references/engineering/agent-memory-product-engineering.md",
+      "supplements": ["references/engineering/agent-memory-governance-engineering.md", "references/engineering/agent-product-engineering.md"],
+      "contract_ids": ["TERM-MEMORY", "INV-MEMORY-001", "INV-PRIVACY-001"],
+      "priority": 85
+    },
+    {
+      "id": "workflow.orchestration",
+      "intents": ["workflow_engine", "durable_execution", "dag", "compensation"],
+      "positive_signals": ["workflow", "DAG", "step", "compensation", "durable execution"],
+      "negative_signals": ["单轮工具调用"],
+      "primary": "references/engineering/workflow-orchestration-engineering.md",
+      "supplements": ["references/engineering/durable-queue-engineering.md", "references/engineering/workflow-versioning-engineering.md"],
+      "contract_ids": ["TERM-WORKFLOW-RUN", "TERM-ATTEMPT", "INV-WORKFLOW-001", "INV-RECOVERY-001"],
+      "priority": 90
+    },
+    {
+      "id": "provider.security_contract",
+      "intents": ["provider_security", "provider_egress", "credential_scope", "residency_contract"],
+      "positive_signals": ["Provider 安全合同", "egress", "credential scope", "retention", "attestation"],
+      "negative_signals": ["应用内普通工具审批"],
+      "primary": "references/engineering/provider-security-contract-engineering.md",
+      "supplements": ["references/engineering/privacy-engineering.md", "references/engineering/provider-routing-engineering.md"],
+      "contract_ids": ["TERM-PROVIDER", "TERM-DEPLOYMENT", "INV-ROUTING-001", "INV-PRIVACY-001"],
+      "priority": 92
+    },
+    {
+      "id": "data.governance",
+      "intents": ["data_governance", "data_inventory", "retention_policy", "governance_evidence"],
+      "positive_signals": ["data catalog", "ownership", "classification", "purpose", "治理证明"],
+      "negative_signals": ["只处理单次 PII 脱敏"],
+      "primary": "references/engineering/data-governance-engineering.md",
+      "supplements": ["references/engineering/privacy-engineering.md", "references/engineering/data-lineage-engineering.md"],
+      "contract_ids": ["INV-PRIVACY-001", "TERM-STATE-OWNERSHIP", "TERM-ARTIFACT"],
+      "priority": 82
+    },
+    {
+      "id": "memory.governance",
+      "intents": ["memory_governance", "memory_policy", "memory_consent"],
+      "positive_signals": ["memory purpose", "scope", "consent", "provenance", "tombstone"],
+      "negative_signals": ["记忆 UI", "DSAR 值班运营"],
+      "primary": "references/engineering/agent-memory-governance-engineering.md",
+      "supplements": ["references/engineering/agent-memory-product-engineering.md", "references/engineering/agent-memory-privacy-operations-engineering.md"],
+      "contract_ids": ["TERM-MEMORY", "INV-MEMORY-001", "INV-PRIVACY-001"],
+      "priority": 88
+    },
+    {
+      "id": "memory.privacy_operations",
+      "intents": ["memory_privacy_ops", "memory_dsar", "memory_incident"],
+      "positive_signals": ["memory inventory", "DLP", "删除对账", "隐私 SLO", "privacy incident"],
+      "negative_signals": ["只设计候选记忆 UX"],
+      "primary": "references/engineering/agent-memory-privacy-operations-engineering.md",
+      "supplements": ["references/engineering/agent-memory-governance-engineering.md", "references/engineering/privacy-engineering.md"],
+      "contract_ids": ["TERM-MEMORY", "INV-MEMORY-001", "INV-PRIVACY-001"],
+      "priority": 88
+    },
+    {
+      "id": "workflow.versioning",
+      "intents": ["workflow_versioning", "workflow_migration", "long_running_upgrade"],
+      "positive_signals": ["workflow definition version", "snapshot", "migration", "rollback", "在途运行"],
+      "negative_signals": ["普通代码版本发布"],
+      "primary": "references/engineering/workflow-versioning-engineering.md",
+      "supplements": ["references/engineering/workflow-orchestration-engineering.md", "references/engineering/provider-schema-evolution-engineering.md"],
+      "contract_ids": ["TERM-WORKFLOW-RUN", "INV-WORKFLOW-001", "INV-STATE-001"],
+      "priority": 86
+    },
+    {
+      "id": "provider.contract_testing",
+      "intents": ["provider_contract_test", "adapter_fixture", "record_replay_test"],
+      "positive_signals": ["contract testing", "fixture", "golden", "stream/tool 测试", "record/replay"],
+      "negative_signals": ["组织级 Provider 合规发布决策"],
+      "primary": "references/engineering/provider-contract-testing-engineering.md",
+      "supplements": ["references/engineering/provider-runtime-conformance-engineering.md", "references/engineering/provider-schema-evolution-engineering.md"],
+      "contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-002", "INV-STREAM-001"],
+      "priority": 89
+    },
+    {
+      "id": "data.quality_operations",
+      "intents": ["data_quality", "freshness_slo", "quarantine", "backfill"],
+      "positive_signals": ["data contract", "freshness", "completeness", "reconciliation", "backfill"],
+      "negative_signals": ["lineage 图本身"],
+      "primary": "references/engineering/data-quality-operations-engineering.md",
+      "supplements": ["references/engineering/data-governance-engineering.md", "references/engineering/lineage-quality-engineering.md"],
+      "contract_ids": ["INV-PRIVACY-001", "TERM-STATE-OWNERSHIP"],
+      "priority": 80
+    },
+    {
+      "id": "memory.evaluation",
+      "intents": ["memory_eval", "memory_golden_set", "memory_poisoning_test"],
+      "positive_signals": ["memory evaluation", "recall 评测", "删除评测", "poisoning", "memory release gate"],
+      "negative_signals": ["通用 Agent 测评集"],
+      "primary": "references/engineering/agent-memory-evaluation-engineering.md",
+      "supplements": ["references/engineering/agent-evaluation-dataset-engineering.md", "references/engineering/agent-memory-governance-engineering.md"],
+      "contract_ids": ["TERM-MEMORY", "TERM-TRIAL", "INV-MEMORY-001", "INV-EVAL-001"],
+      "priority": 88
+    },
+    {
+      "id": "workflow.scheduling",
+      "intents": ["workflow_scheduler", "fairness", "priority", "preemption"],
+      "positive_signals": ["readiness", "priority", "fairness", "tenant quota", "preemption", "fencing"],
+      "negative_signals": ["只做容量预测"],
+      "primary": "references/engineering/workflow-scheduling-engineering.md",
+      "supplements": ["references/engineering/workflow-capacity-engineering.md", "references/engineering/durable-queue-engineering.md"],
+      "contract_ids": ["TERM-WORKFLOW-RUN", "TERM-ATTEMPT", "INV-RECOVERY-001"],
+      "priority": 85
+    },
+    {
+      "id": "workflow.capacity",
+      "intents": ["capacity_planning", "autoscaling", "resource_class", "headroom"],
+      "positive_signals": ["capacity", "Little 定律", "autoscaling", "headroom", "reserved", "burst"],
+      "negative_signals": ["只决定单任务优先级"],
+      "primary": "references/engineering/workflow-capacity-engineering.md",
+      "supplements": ["references/engineering/workflow-scheduling-engineering.md", "references/engineering/production-operations-engineering.md"],
+      "contract_ids": ["TERM-WORKFLOW-RUN", "INV-ROUTING-001", "INV-RECOVERY-001"],
+      "priority": 82
+    },
+    {
+      "id": "provider.incident_response",
+      "intents": ["provider_incident", "provider_outage", "provider_data_exposure"],
+      "positive_signals": ["provider outage", "capability drift", "data exposure", "credential revoke", "quarantine"],
+      "negative_signals": ["普通应用安全事件"],
+      "primary": "references/engineering/provider-incident-response-engineering.md",
+      "supplements": ["references/engineering/provider-recovery-engineering.md", "references/engineering/security-operations-engineering.md"],
+      "contract_ids": ["TERM-PROVIDER", "INV-ROUTING-001", "INV-RECOVERY-001"],
+      "priority": 92
+    },
+    {
+      "id": "provider.recovery",
+      "intents": ["provider_recovery", "regional_failover", "fallback_reconciliation"],
+      "positive_signals": ["circuit", "bulkhead", "fallback", "regional failover", "RTO", "RPO", "reconciliation"],
+      "negative_signals": ["事故指挥与取证流程"],
+      "primary": "references/engineering/provider-recovery-engineering.md",
+      "supplements": ["references/engineering/provider-incident-response-engineering.md", "references/engineering/provider-routing-engineering.md"],
+      "contract_ids": ["TERM-UNKNOWN-OUTCOME", "INV-RECOVERY-001", "INV-ROUTING-001"],
+      "priority": 91
+    },
+    {
+      "id": "data.lineage",
+      "intents": ["data_lineage", "impact_analysis", "deletion_propagation"],
+      "positive_signals": ["lineage", "provenance", "forward impact", "backward impact", "删除传播"],
+      "negative_signals": ["只评估 lineage 质量"],
+      "primary": "references/engineering/data-lineage-engineering.md",
+      "supplements": ["references/engineering/lineage-quality-engineering.md", "references/engineering/data-governance-engineering.md"],
+      "contract_ids": ["TERM-STATE-OWNERSHIP", "INV-PRIVACY-001", "INV-STATE-001"],
+      "priority": 82
+    },
+    {
+      "id": "lineage.quality",
+      "intents": ["lineage_quality", "lineage_slo", "orphan_detection"],
+      "positive_signals": ["lineage completeness", "correctness", "orphan", "cyclic", "quality budget"],
+      "negative_signals": ["设计 lineage 数据模型"],
+      "primary": "references/engineering/lineage-quality-engineering.md",
+      "supplements": ["references/engineering/data-lineage-engineering.md", "references/engineering/data-quality-operations-engineering.md"],
+      "contract_ids": ["INV-EVAL-001", "INV-STATE-001", "INV-PRIVACY-001"],
+      "priority": 80
+    },
+    {
+      "id": "provider.azure",
+      "intents": ["azure_openai", "azure_ai_foundry", "azure_agent"],
+      "positive_signals": ["Azure OpenAI", "Azure AI Foundry", "deployment name", "api-version"],
+      "negative_signals": ["Amazon Bedrock", "Vertex AI"],
+      "primary": "references/providers/azure.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md", "references/protocols/openai-protocol.md"],
+      "contract_ids": ["TERM-PROVIDER", "TERM-API-FAMILY", "TERM-DEPLOYMENT", "INV-PROVIDER-001"],
+      "priority": 100
+    },
+    {
+      "id": "provider.bedrock",
+      "intents": ["amazon_bedrock", "bedrock_converse", "bedrock_agents"],
+      "positive_signals": ["Amazon Bedrock", "Converse", "Bedrock Runtime", "AWS credentials"],
+      "negative_signals": ["Azure OpenAI", "Vertex AI"],
+      "primary": "references/providers/bedrock.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md"],
+      "contract_ids": ["TERM-PROVIDER", "TERM-API-FAMILY", "TERM-DEPLOYMENT", "INV-PROVIDER-001"],
+      "priority": 100
+    },
+    {
+      "id": "provider.vertex",
+      "intents": ["vertex_ai", "gemini_vertex", "google_cloud_agent"],
+      "positive_signals": ["Vertex AI", "Google Cloud", "project", "location", "ADC"],
+      "negative_signals": ["Gemini Developer API only"],
+      "primary": "references/providers/vertex-ai.md",
+      "supplements": ["references/protocols/gemini-protocol.md", "references/engineering/provider-runtime-engineering.md"],
+      "contract_ids": ["TERM-PROVIDER", "TERM-API-FAMILY", "TERM-DEPLOYMENT", "INV-PROVIDER-001"],
+      "priority": 100
+    },
+    {
+      "id": "protocol.openai",
+      "intents": ["openai_responses", "openai_chat_completions", "openai_realtime", "codex_api"],
+      "positive_signals": ["OpenAI Responses", "Chat Completions", "Realtime", "Codex", "response item"],
+      "negative_signals": ["仅说 OpenAI-compatible 但提供商不是 OpenAI"],
+      "primary": "references/protocols/openai-protocol.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md", "references/agent-api-patterns.md"],
+      "contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-001", "INV-PROVIDER-002", "INV-STREAM-001"],
+      "priority": 100
+    },
+    {
+      "id": "protocol.anthropic",
+      "intents": ["anthropic_messages", "anthropic_agent_sdk", "anthropic_mcp"],
+      "positive_signals": ["Anthropic Messages", "Claude API", "Agent SDK", "content block"],
+      "negative_signals": ["只讨论 OpenAI 协议"],
+      "primary": "references/protocols/anthropic-protocol.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md", "references/agent-api-patterns.md"],
+      "contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-001", "INV-PROVIDER-002", "INV-STREAM-001"],
+      "priority": 100
+    },
+    {
+      "id": "protocol.gemini",
+      "intents": ["gemini_generate_content", "gemini_interactions", "gemini_live"],
+      "positive_signals": ["Gemini", "GenerateContent", "Interactions API", "Live API", "Content/Part"],
+      "negative_signals": ["仅讨论 Vertex 平台治理"],
+      "primary": "references/protocols/gemini-protocol.md",
+      "supplements": ["references/providers/vertex-ai.md", "references/engineering/provider-runtime-engineering.md"],
+      "contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-001", "INV-PROVIDER-002", "INV-STREAM-001"],
+      "priority": 100
+    },
+    {
+      "id": "protocol.grok",
+      "intents": ["grok_api", "xai_responses", "grok_tools"],
+      "positive_signals": ["xAI", "Grok", "Responses API", "gRPC", "Agent Tools"],
+      "negative_signals": ["OpenAI 官方模型"],
+      "primary": "references/protocols/grok-protocol.md",
+      "supplements": ["references/engineering/provider-runtime-engineering.md", "references/agent-api-patterns.md"],
+      "contract_ids": ["TERM-API-FAMILY", "INV-PROVIDER-001", "INV-PROVIDER-002", "INV-STREAM-001"],
+      "priority": 100
+    }
+  ]
+}
