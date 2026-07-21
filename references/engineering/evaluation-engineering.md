@@ -1,7 +1,7 @@
 # Agent Evaluation Engineering 详细设计
 > Agent Evaluation 不是对最终回答做一次文本打分，而是验证模型—工具闭环的完整行为：输入、上下文、模型动作、权限、工具、持久状态、真实副作用、恢复、交付与最终结果。
 >
-> 本文偏重 Runner、Testkit、Assertion、Oracle 执行、Fault/Crash、CI 和生产评测闭环；测评集分类、case authoring、ground truth、grader 校准、统计设计、污染防护与生命周期见 [Agent Evaluation Dataset Engineering](agent-evaluation-dataset-engineering.md)。
+> 本文偏重 Runner、Testkit、Assertion、Oracle 执行、Fault/Crash、CI 和生产评测闭环；测评集分类、case authoring、ground truth、grader 校准、统计设计、污染防护与生命周期属于同级 `agent-platform-engineering-skill` 的高级资料。
 ## 目录
 1. [设计目标](#设计目标)
 2. [职责边界](#职责边界)

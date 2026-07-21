@@ -2,14 +2,14 @@
 
 **Contract version:** `1.0.0`
 
-本文件是本 Skill 的跨文档术语和不变量规范源。工程专题可以扩展字段与实现，但不得改变这里的语义；发生冲突时，先修改本文件并同步所有消费者。
+本文件是核心 Agent Creator Skill 的跨文档术语和不变量规范源。专题文档可以补充实现细节，但不得改变这里的语义；发生冲突时以本文件为准。
 
 ## 使用规则
 
-- 路由先从 `references/routes.json` 选择主文档，再加载本文件中该路由声明的 `TERM-*` 和 `INV-*`。
-- `TERM-*` 定义稳定概念；`INV-*` 定义任何实现都必须保持的不变量。
+- 先从 `references/routes.json` 选择主文档，再读取该路由声明的 Contract IDs。
+- `TERM-*` 定义稳定概念；`INV-*` 定义实现必须保持的不变量。
 - Provider 原生字段可以保留，但不得覆盖 canonical 字段的含义。
-- Authoring Schema、Runtime Schema 和 Persistence Schema 可以不同，但必须有显式、可版本化、可测试的映射。
+- Authoring、Runtime 和 Persistence Schema 可以不同，但必须有显式、可版本化、可测试的映射。
 
 ## 核心术语
 
@@ -17,12 +17,9 @@
 
 一组具有共同请求、响应、流式事件、工具调用、状态和错误语义的接口协议。Provider 相同不代表 API Family 相同；OpenAI-compatible 只说明部分请求形状兼容。
 
-**规范所有者：** Provider Runtime。  
-**禁止混淆：** Provider、SDK、Model、Deployment。
-
 ### TERM-PROVIDER — Provider
 
-提供模型或托管运行能力的组织、云平台或本地运行服务。Provider 是信任、计费、数据外发、区域和故障域边界。
+提供模型或托管运行能力的组织、云平台或本地服务。Provider 是信任、计费、数据外发、区域和故障域边界。
 
 ### TERM-MODEL — Model
 
@@ -34,19 +31,11 @@ Provider 中可被调用的部署实例或路由目标，包含 endpoint、regio
 
 ### TERM-AGENT-KERNEL — Agent Kernel
 
-Headless 的模型—工具循环，负责 turn、标准事件、工具调用/结果关联、停止、预算与取消，不直接拥有 UI、密钥、业务数据库或长期记忆。
+Headless 的模型—工具循环，负责 turn、标准事件、工具调用/结果关联、停止、预算和取消；不直接拥有 UI、密钥、业务数据库或长期记忆。
 
 ### TERM-HARNESS — Agent Harness
 
-围绕 Kernel 的上下文、Provider、工具、权限、沙箱、状态、事件、扩展、评测和交付运行环境。
-
-### TERM-ATTEMPT — Attempt
-
-某个可重试执行单元的一次尝试。Attempt 可以因网络、Provider 或 Worker 故障重试，但不能被统计为新的独立任务。
-
-### TERM-TRIAL — Trial
-
-同一评测 Scenario/Variant 的一次完整执行。Trial 用于估计随机性，不自动构成独立 Root Case。
+围绕 Kernel 的 Context、Provider、Tool、Policy、Sandbox、State、Event、扩展、评测和交付运行环境。
 
 ### TERM-TOOL-CALL — Tool Call
 
@@ -76,6 +65,18 @@ Provider、Tool、Policy、Session 和 Host 原始事件归一化后的版本化
 
 承载用户交互、Agent 执行和持久状态关系的逻辑容器。Session 可以包含多个 Run、Branch、Checkpoint 和 Transcript Entry。
 
+### TERM-MEMORY — Memory
+
+跨当前模型上下文保存并可能在未来被召回的信息对象，必须携带 scope、purpose、provenance、TTL、consent 和删除状态。
+
+### TERM-TRIAL — Trial
+
+同一评测 Scenario/Variant 的一次完整执行。Trial 用于估计随机性，不自动构成独立 Root Case。
+
+### TERM-INFRA-ERROR — Infrastructure Error
+
+由评测环境、Fixture、Runner、网络或 Grader 基础设施造成，无法有效判断被测 Agent 能力的结果。
+
 ### TERM-STATE-OWNERSHIP — State Ownership
 
 每类事实的权威所有者：Provider conversation state、Agent execution state、Business state、Memory、Artifact 和 Trace 必须分开建模。
@@ -88,27 +89,7 @@ Provider、Tool、Policy、Session 和 Host 原始事件归一化后的版本化
 
 系统无法确认有副作用动作是否已经提交或外部可见的状态。Unknown Outcome 不是普通失败，也不能通过盲目重试消除。
 
-### TERM-INFRA-ERROR — Infrastructure Error
-
-由评测环境、Fixture、Runner、网络或 Grader 基础设施造成，无法有效判断被测 Agent 能力的结果。
-
-### TERM-COLLECTION — Evaluation Collection
-
-按用途组织案例的集合，例如 golden、challenge、selection holdout、release holdout、calibration 和 red team。
-
-### TERM-PARTITION — Evaluation Partition
-
-用于开发和发布阶段隔离的分区，例如 dev、validation、test、canary 和 production shadow。Collection 与 Partition 是正交维度。
-
-### TERM-WORKFLOW-RUN — Workflow Run
-
-固定 Workflow Definition/Snapshot 后的一次 durable execution，由 Step、Attempt、Checkpoint、Approval 和 Compensation 构成。
-
-### TERM-MEMORY — Memory
-
-跨当前模型上下文保存并可能在未来被召回的信息对象，必须携带 scope、purpose、provenance、TTL、consent 和删除状态。
-
-## 跨模块不变量
+## 核心不变量
 
 ### INV-PROVIDER-001 — 先识别 API Family
 
@@ -170,33 +151,18 @@ Canonical Event 必须支持稳定 sequence、correlation 和 causation；日志
 
 Infrastructure Error、Grader Error、Invalid Task、Skipped 和 Inconclusive 必须与 Passed/Failed 分开报告。
 
-### INV-EVAL-003 — Trial 与 Variant 不是独立案例
-
-统计聚合必须先处理 Trial 和 Variant，再以 Root Case 或更高相关性单位估计置信区间。
-
 ### INV-PRIVACY-001 — Purpose 与最小化先于收集
 
 任何进入 Prompt、Provider、Tool、Memory、Artifact、Trace 或 Eval 的数据都必须有目的、分类、最小化和生命周期规则。
-
-### INV-MEMORY-001 — Memory 写入与召回均受治理
-
-Memory Candidate、Write、Recall、Edit、Delete 和 Forget 必须分别授权、记录 Provenance，并支持用户控制和删除传播。
-
-### INV-WORKFLOW-001 — Workflow 运行固定版本
-
-长时间 Workflow Run 必须固定 Definition、Policy、Provider、Tool Schema 和 Artifact Contract 版本，升级不得静默改变在途运行语义。
 
 ### INV-RECOVERY-001 — 恢复前先结算未知副作用
 
 Retry、Fallback、Replay、Failover 或 Worker 接管前，必须检查已提交状态、Lease/Fencing 和 Idempotency，避免重复不可逆动作。
 
-### INV-ROUTING-001 — 路由不得降低安全契约
-
-Provider 或 Model Fallback 必须满足原请求的能力、数据驻留、凭据、Policy 和安全边界；不可为可用性静默降级。
-
 ## 变更规则
 
 1. 新增术语或不变量时分配稳定 ID，不复用已删除 ID。
-2. 修改语义时说明受影响文档、Schema、模板和 Eval，并升级相关版本。
+2. 修改语义时说明受影响文档、Schema、模板和 Eval，并升级 Contract version。
 3. 删除前先迁移所有 `routes.json` 和 Reference 引用。
 4. 自动校验必须阻止未知 Contract ID、重复 ID 和失效引用进入发布。
+5. 多租户、Workflow、生产运营、数据治理和高级评测 Contract 属于 `agent-platform-engineering-skill`，不要复制回核心 Contract。
