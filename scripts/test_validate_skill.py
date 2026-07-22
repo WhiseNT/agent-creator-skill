@@ -51,6 +51,13 @@ class ValidateSkillTests(unittest.TestCase):
                     ],
                     "expand_only_for": ["cross_module_design"],
                     "coverage_exempt": ["references/canonical-contract.md"],
+                    "scope": "single_agent_or_limited_runtime",
+                    "handoff": {
+                        "target_skill": "agent-platform-engineering-skill",
+                        "exact_intents": ["build_agent_platform"],
+                        "positive_signals": ["多租户"],
+                        "retain_core_foundation_routes": ["fixture.topic"],
+                    },
                 },
                 "routes": [self._valid_route()],
             }
@@ -230,6 +237,39 @@ class ValidateSkillTests(unittest.TestCase):
             "# Topic\n\n## 后续可继续拆分\n\n- `topic.md`\n", encoding="utf-8"
         )
         self.assertIn("ROADMAP_STALE", self._categories())
+
+    def test_missing_handoff_defaults_fails(self) -> None:
+        routes = self._read_routes()
+        del routes["defaults"]["handoff"]
+        self._write_routes(routes)
+        self.assertIn("HANDOFF", self._categories())
+
+    def test_route_claiming_handoff_intent_fails(self) -> None:
+        routes = self._read_routes()
+        routes["routes"][0]["intents"].append("build_agent_platform")
+        self._write_routes(routes)
+        self.assertIn("HANDOFF", self._categories())
+
+    def test_handoff_eval_target_mismatch_fails(self) -> None:
+        evals = self._valid_evals()
+        evals["evals"][0]["routing_expectation"] = {
+            "mode": "handoff",
+            "target_skill": "wrong-skill",
+            "max_loaded_references": 0,
+        }
+        self._write_evals(evals)
+        self.assertIn("EVAL_ROUTE", self._categories())
+
+    def test_handoff_eval_with_core_primary_fails(self) -> None:
+        evals = self._valid_evals()
+        evals["evals"][0]["routing_expectation"] = {
+            "mode": "handoff",
+            "target_skill": "agent-platform-engineering-skill",
+            "primary": "references/topic.md",
+            "max_loaded_references": 0,
+        }
+        self._write_evals(evals)
+        self.assertIn("EVAL_ROUTE", self._categories())
 
 
 if __name__ == "__main__":

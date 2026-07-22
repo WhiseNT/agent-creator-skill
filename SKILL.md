@@ -1,6 +1,6 @@
 ---
 name: agent-creator-skill
-description: 帮助 AI 设计、实现、迁移、调试和测试完善的 LLM Agent。用户提到 Agent、智能体、工具调用、function calling、MCP、结构化输出、流式事件、会话状态、RAG、Provider 迁移或 Agent runtime 时触发。默认聚焦单 Agent 或有限规模的可靠实现；不要把所有 Provider 都假设成 OpenAI Chat Completions。
+description: 帮助 AI 设计、实现、迁移、调试和测试基于 LLM API 的软件 Agent/智能体。用户要编写或审查工具调用、function calling、MCP、结构化输出、流式事件、会话状态、RAG、Provider/API 迁移或单 Agent runtime 时应使用本 Skill；普通客服岗位、代理人、浏览器 user-agent 等非 LLM Agent 语境不要触发。默认处理单 Agent 或有限规模 runtime；若任务核心是多租户、durable workflow、SLO/灾备、容量或成本治理、隐私/DSAR、Provider 事故恢复、复杂 Memory 治理、Coding Agent 工作区隔离或平台级评测，应改用 agent-platform-engineering-skill。不要把所有 Provider 都假设成 OpenAI Chat Completions。
 compatibility: 需要文件读写和代码搜索能力；查询快速变化的 API、模型、配额、价格或弃用状态时必须访问官方文档。
 ---
 
@@ -30,6 +30,35 @@ compatibility: 需要文件读写和代码搜索能力；查询快速变化的 A
 7. **快速变化的信息只信官方文档。** 模型列表、价格、配额、预览状态和弃用日期不要依赖记忆。
 
 ## 工作流
+
+### 0. 先判定核心 Skill 还是平台 Skill
+
+先判断用户是在实现一个 Agent，还是在建设和运营 Agent 平台。关键词本身不足以决定分流，要看任务的权威状态、恢复范围和治理责任。
+
+留在本 Skill：
+
+- 单 Agent 或有限规模 runtime 的 Kernel/Harness；
+- Tool/MCP、结构化输出、流式事件、RAG、Session State 和应用内审批；
+- 单个 Provider adapter、API family 选型、普通 retry 与协议迁移；
+- Eval runner、Assertion 执行器、fault injection 和 CI regression。
+
+切换到同级 `agent-platform-engineering-skill`：
+
+- 多租户、租户/Workspace/Queue 隔离与配额；
+- 长时间运行、durable workflow、DAG、Lease、Fencing、DLQ 或跨进程恢复；
+- 生产 SLO、容量、成本、发布门禁、事故响应与灾备；
+- 隐私/DSAR、数据治理、删除传播、复杂 Memory 产品或治理；
+- Provider 路由策略、跨区恢复、事故对账、组织级 conformance；
+- Coding Agent 工作区隔离、平台级 Eval Dataset 或 Memory release gate。
+
+易混淆边界：
+
+- 应用内 429/5xx 有限重试属于核心；未知写结果对账、跨 Provider fallback 和区域恢复属于平台。
+- Session transcript/checkpoint 属于核心；用户可见记忆、consent、DSAR 和删除传播属于平台。
+- Eval runner 属于核心；golden/holdout 数据集治理、grader calibration 和平台发布门禁属于平台。
+- Agent 内部 Harness 属于核心；面向 CLI/IDE/HTTP/Channel 的通用 Host Adapter 平台属于高级 Skill。
+
+平台任务可以先用本 Skill 的 Canonical Contract 建立 Kernel/Harness 基线，但不要在核心 Skill 中替代高级专题。
 
 ### 1. 先读代码，再确定最小需求
 
@@ -136,9 +165,9 @@ EventSink      流式事件、日志和 trace
 
 ## 高级平台边界
 
-本 Skill 不默认加载多租户平台、生产运维、工作流调度与容量、隐私/数据治理、成本治理、Provider 事故响应、复杂 Memory 治理、Coding Agent 工作区隔离等资料。
+本 Skill 不默认加载多租户平台、生产运维、Workflow 调度与容量、隐私/数据治理、成本治理、Provider 事故响应、复杂 Memory 治理、Coding Agent 工作区隔离等资料。
 
-如果任务明确涉及这些主题，切换到同级的 `agent-platform-engineering-skill`，先完成本 Skill 的 Kernel/Harness 基础，再加载平台级专题。
+如果任务明确涉及这些主题，切换到同级 `agent-platform-engineering-skill`。只有任务同时需要底层 Agent 循环时，才先使用本 Skill 完成 Kernel/Harness 基线，再加载平台级专题；不要因为用户写了“Agent”就让核心路由吞掉平台职责。
 
 ## 输出要求
 

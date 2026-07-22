@@ -21,7 +21,44 @@
     "coverage_exempt": [
       "references/canonical-contract.md",
       "references/engineering/index.md"
-    ]
+    ],
+    "scope": "single_agent_or_limited_runtime",
+    "handoff": {
+      "target_skill": "agent-platform-engineering-skill",
+      "exact_intents": [
+        "build_agent_platform",
+        "multi_tenant_agent",
+        "durable_workflow",
+        "operate_agent_platform",
+        "provider_incident_recovery",
+        "privacy_data_governance",
+        "memory_governance",
+        "platform_eval_dataset",
+        "coding_agent_workspace_isolation"
+      ],
+      "positive_signals": [
+        "多租户",
+        "tenant isolation",
+        "durable workflow",
+        "workflow orchestration",
+        "SLO",
+        "灾备",
+        "容量治理",
+        "成本治理",
+        "DSAR",
+        "删除传播",
+        "provider incident",
+        "regional failover",
+        "memory governance",
+        "workspace isolation",
+        "golden set",
+        "holdout"
+      ],
+      "retain_core_foundation_routes": [
+        "architecture.reference",
+        "implementation.api_patterns"
+      ]
+    }
   },
   "routes": [
     {
@@ -29,20 +66,24 @@
       "intents": [
         "design_agent",
         "review_architecture",
-        "build_agent_platform"
+        "design_agent_runtime"
       ],
       "positive_signals": [
         "完整 Agent",
         "参考架构",
-        "跨模块架构",
-        "Agent 平台架构",
-        "重构整个 Agent 系统"
+        "单 Agent 跨模块架构",
+        "Agent Kernel/Harness 架构",
+        "重构整个 Agent runtime"
       ],
       "negative_signals": [
         "只需 harness 快速清单",
         "只实现 harness 模块",
         "只修一个工具参数",
-        "只查单个 API 字段"
+        "只查单个 API 字段",
+        "多租户 Agent 平台",
+        "durable workflow",
+        "平台 SLO",
+        "容量或成本治理"
       ],
       "primary": "references/agent-reference-architecture.md",
       "supplements": [
@@ -188,7 +229,10 @@
         "附件选择"
       ],
       "negative_signals": [
-        "长期记忆产品控制"
+        "长期记忆产品控制",
+        "memory governance",
+        "DSAR",
+        "删除传播"
       ],
       "primary": "references/engineering/context-engineering.md",
       "supplements": [
@@ -212,12 +256,14 @@
       "positive_signals": [
         "runtime 装配",
         "Harness",
-        "plugin",
-        "host",
+        "plugin runtime",
+        "应用内 host integration",
         "session runtime"
       ],
       "negative_signals": [
-        "只写最小工具循环"
+        "只写最小工具循环",
+        "通用 CLI IDE HTTP Adapter",
+        "多 Channel Host 平台"
       ],
       "primary": "references/engineering/harness-engineering.md",
       "supplements": [
@@ -280,7 +326,10 @@
       ],
       "negative_signals": [
         "用户可见记忆产品",
-        "DSAR 运营"
+        "memory consent",
+        "memory governance",
+        "DSAR 运营",
+        "删除传播"
       ],
       "primary": "references/engineering/state-memory-engineering.md",
       "supplements": [
@@ -335,13 +384,17 @@
       ],
       "positive_signals": [
         "事件 envelope",
-        "trace",
-        "metric",
-        "audit",
-        "durable stream"
+        "Agent trace",
+        "runtime metric",
+        "应用内 audit event",
+        "event stream"
       ],
       "negative_signals": [
-        "只做日志格式美化"
+        "只做日志格式美化",
+        "SIEM",
+        "安全运营",
+        "on-call",
+        "平台 SLO"
       ],
       "primary": "references/engineering/event-observability-engineering.md",
       "supplements": [],
@@ -369,7 +422,11 @@
       ],
       "negative_signals": [
         "编写测评题库",
-        "数据集 split"
+        "数据集 split",
+        "golden set 治理",
+        "holdout",
+        "grader calibration",
+        "Memory release gate"
       ],
       "primary": "references/engineering/evaluation-engineering.md",
       "supplements": [
@@ -401,7 +458,11 @@
       ],
       "negative_signals": [
         "只做接口选型",
-        "仅做发布合规测试",
+        "组织级 Provider 路由策略",
+        "Provider 事故响应",
+        "regional failover",
+        "fallback 对账",
+        "conformance 发布门禁",
         "只写测试 fixture"
       ],
       "primary": "references/engineering/provider-runtime-engineering.md",

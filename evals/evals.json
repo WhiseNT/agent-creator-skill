@@ -9,8 +9,8 @@
   },
   "dataset": {
     "name": "agent-creator-core-regression",
-    "version": "1.0.0",
-    "purpose": "验证 API family、工具安全、状态所有权、流式协议和架构取舍等核心行为"
+    "version": "1.1.0",
+    "purpose": "验证 API family、工具安全、状态所有权、流式协议、架构取舍和核心/平台 scope handoff 边界"
   },
   "evals": [
     {
@@ -306,6 +306,128 @@
           "type": "output_semantic",
           "severity": "soft",
           "negative": false
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "请给一个单用户本地 Agent 接入两个 MCP 工具，并为删除文件增加参数校验和人工审批；不需要多租户、后台队列或长时间工作流。",
+      "expected_output": "保留在核心 Skill，路由到工具工程，设计 Tool Call/Execution 分离、Schema 与业务校验、Policy/Approval 和幂等边界，不升级为平台架构。",
+      "tags": ["scope-boundary", "mcp", "approval", "core"],
+      "risk": "medium",
+      "files": [],
+      "routing_expectation": {
+        "mode": "route",
+        "route_id": "tool.engineering",
+        "primary": "references/engineering/tool-engineering.md",
+        "required_contract_ids": ["TERM-TOOL-CALL", "TERM-TOOL-EXECUTION", "INV-TOOL-001", "INV-TOOL-004"],
+        "max_loaded_references": 3
+      },
+      "assertions": [
+        {
+          "text": "明确这是单 Agent/有限规模工具执行问题，应继续使用核心 Skill 的 tool.engineering 路由。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "区分 Tool Call 与 Tool Execution，并包含 Schema、业务规则、Policy/Approval 与副作用幂等。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得仅因出现 MCP、删除或审批就升级为多租户或 durable workflow 平台设计。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "设计一个支持多个企业租户的 Agent 平台：任务运行数小时，包含 DAG、队列、人工审批、worker 崩溃恢复、租户配额和审计。",
+      "expected_output": "识别为平台级 durable workflow 与多租户任务，明确 handoff 到 agent-platform-engineering-skill；核心 Skill 只保留 Kernel/Harness 基线。",
+      "tags": ["scope-boundary", "handoff", "multi-tenant", "workflow"],
+      "risk": "critical",
+      "files": [],
+      "routing_expectation": {
+        "mode": "handoff",
+        "target_skill": "agent-platform-engineering-skill",
+        "max_loaded_references": 0
+      },
+      "assertions": [
+        {
+          "text": "明确切换到 agent-platform-engineering-skill，并指出多租户、durable workflow、队列与崩溃恢复是平台边界。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "如需核心基础，仅保留 Kernel/Harness 或工具循环基线。",
+          "type": "output_semantic",
+          "severity": "soft",
+          "negative": false
+        },
+        {
+          "text": "不得把该任务仅路由到核心 architecture.reference，并用单进程 retry/checkpoint 代替平台恢复。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "我们要让用户查看、编辑和删除 Agent 长期记忆，并把删除请求传播到向量库、Trace、Eval 数据集、Provider 和备份；还要处理 DSAR 与 consent。",
+      "expected_output": "识别为 Memory 隐私与治理任务，handoff 到 agent-platform-engineering-skill，而不是当作普通 Session State 或 RAG Context。",
+      "tags": ["scope-boundary", "handoff", "memory-governance", "dsar"],
+      "risk": "high",
+      "files": [],
+      "routing_expectation": {
+        "mode": "handoff",
+        "target_skill": "agent-platform-engineering-skill",
+        "max_loaded_references": 0
+      },
+      "assertions": [
+        {
+          "text": "明确切换到 agent-platform-engineering-skill，并区分 Session/Context 与 Memory consent、DSAR、删除传播治理。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得只建议删除主数据库记录，或仅路由到核心 state.memory.engineering/context.engineering。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "某模型 Provider 大面积 5xx，部分付款工具调用的响应丢失，计划自动切换到另一区域和另一 Provider。请设计事故恢复、fallback 与对账。",
+      "expected_output": "识别为 Provider 事故恢复和 Unknown Outcome，对平台 Skill 做 handoff；不能把普通 provider adapter retry 当成完整方案。",
+      "tags": ["scope-boundary", "handoff", "provider-incident", "recovery"],
+      "risk": "critical",
+      "files": [],
+      "routing_expectation": {
+        "mode": "handoff",
+        "target_skill": "agent-platform-engineering-skill",
+        "max_loaded_references": 0
+      },
+      "assertions": [
+        {
+          "text": "明确切换到 agent-platform-engineering-skill，并指出事故响应、Unknown Outcome、跨区/跨 Provider fallback 和对账属于平台恢复。",
+          "type": "output_semantic",
+          "severity": "hard",
+          "negative": false
+        },
+        {
+          "text": "不得把核心 provider.runtime 的有限重试或直接切换 Provider 当作完整恢复策略。",
+          "type": "output_not_semantic",
+          "severity": "hard",
+          "negative": true
         }
       ]
     }

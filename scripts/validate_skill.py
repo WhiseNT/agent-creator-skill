@@ -34,6 +34,13 @@ VALID_ASSERTION_TYPES = {"output_semantic", "output_contains", "output_not_seman
 VALID_SEVERITIES = {"soft", "hard"}
 VALID_RISKS = {"low", "medium", "high", "critical"}
 HIGH_RISKS = {"high", "critical"}
+REQUIRED_HANDOFF_FIELDS = {
+    "target_skill",
+    "exact_intents",
+    "positive_signals",
+    "retain_core_foundation_routes",
+}
+VALID_ROUTING_MODES = {"route", "handoff"}
 
 
 @dataclass(frozen=True)
@@ -144,6 +151,29 @@ def _validate_routes(root: Path, issues: list[Issue]) -> tuple[dict[str, Any] | 
     if not expand_only_for:
         issues.append(Issue("ROUTE", "defaults.expand_only_for must declare bounded expansion reasons"))
 
+    scope = defaults.get("scope")
+    if not isinstance(scope, str) or not scope.strip():
+        issues.append(Issue("HANDOFF", "defaults.scope must be non-empty text"))
+
+    handoff = defaults.get("handoff")
+    handoff_intents: set[str] = set()
+    if not isinstance(handoff, dict):
+        issues.append(Issue("HANDOFF", "defaults.handoff must be an object"))
+    else:
+        missing_handoff = REQUIRED_HANDOFF_FIELDS - handoff.keys()
+        if missing_handoff:
+            issues.append(Issue("HANDOFF", f"defaults.handoff is missing: {', '.join(sorted(missing_handoff))}"))
+        target_skill = handoff.get("target_skill")
+        if not isinstance(target_skill, str) or not target_skill.strip():
+            issues.append(Issue("HANDOFF", "defaults.handoff.target_skill must be non-empty text"))
+        for field in ("exact_intents", "positive_signals", "retain_core_foundation_routes"):
+            raw_values = handoff.get(field)
+            values = _as_string_list(raw_values)
+            if not isinstance(raw_values, list) or not values or len(values) != len(raw_values):
+                issues.append(Issue("HANDOFF", f"defaults.handoff.{field} must be a non-empty string array"))
+            if field == "exact_intents":
+                handoff_intents.update(values)
+
     contract_ref = defaults.get("canonical_contract", "references/canonical-contract.md")
     contract_path = root / str(contract_ref)
     known_contract_ids, contract_version = _contract_metadata(contract_path, issues)
@@ -186,6 +216,15 @@ def _validate_routes(root: Path, issues: list[Issue]) -> tuple[dict[str, Any] | 
             issues.append(Issue("ROUTE", f"{label} has no positive_signals"))
         if not isinstance(route.get("negative_signals"), list):
             issues.append(Issue("ROUTE", f"{label} negative_signals must be an array"))
+
+        claimed_handoff_intents = sorted(set(_as_string_list(route.get("intents"))) & handoff_intents)
+        if claimed_handoff_intents:
+            issues.append(
+                Issue(
+                    "HANDOFF",
+                    f"{label} claims platform handoff intent(s): {', '.join(claimed_handoff_intents)}",
+                )
+            )
 
         priority = route.get("priority")
         if not isinstance(priority, int) or isinstance(priority, bool) or not 0 <= priority <= 100:
@@ -283,6 +322,7 @@ def _validate_evals(
 
     route_map: dict[str, dict[str, Any]] = {}
     max_loaded_references = 3
+    handoff_target = ""
     if isinstance(route_data, dict):
         route_map = {
             route["id"]: route
@@ -294,6 +334,9 @@ def _validate_evals(
             max_loaded_references = int(defaults.get("max_primary", 1)) + int(
                 defaults.get("max_supplements", 2)
             )
+            handoff = defaults.get("handoff", {})
+            if isinstance(handoff, dict) and isinstance(handoff.get("target_skill"), str):
+                handoff_target = handoff["target_skill"]
 
     seen_ids: set[Any] = set()
     for index, case in enumerate(evals):
@@ -323,33 +366,59 @@ def _validate_evals(
         if not isinstance(routing, dict):
             issues.append(Issue("EVAL_ROUTE", f"{label} must declare routing_expectation"))
         else:
-            route_id = routing.get("route_id")
-            route = route_map.get(route_id) if isinstance(route_id, str) else None
-            if route is None:
-                issues.append(Issue("EVAL_ROUTE", f"{label} references unknown route: {route_id}"))
-            else:
-                if routing.get("primary") != route.get("primary"):
-                    issues.append(Issue("EVAL_ROUTE", f"{label} primary does not match route {route_id}"))
-                required_contract_ids = _as_string_list(routing.get("required_contract_ids"))
-                if not required_contract_ids:
-                    issues.append(Issue("EVAL_ROUTE", f"{label} has no required_contract_ids"))
-                route_contract_ids = set(_as_string_list(route.get("contract_ids")))
-                for contract_id in required_contract_ids:
-                    if contract_id not in known_contract_ids or contract_id not in route_contract_ids:
-                        issues.append(
-                            Issue(
-                                "EVAL_ROUTE",
-                                f"{label} expects contract {contract_id} not supplied by route {route_id}",
-                            )
-                        )
-                loaded = routing.get("max_loaded_references")
-                if not isinstance(loaded, int) or isinstance(loaded, bool) or not 1 <= loaded <= max_loaded_references:
+            routing_mode = routing.get("mode", "route")
+            if routing_mode not in VALID_ROUTING_MODES:
+                issues.append(Issue("EVAL_ROUTE", f"{label} has invalid routing mode: {routing_mode}"))
+            elif routing_mode == "handoff":
+                if routing.get("target_skill") != handoff_target:
                     issues.append(
                         Issue(
                             "EVAL_ROUTE",
-                            f"{label} max_loaded_references must be from 1 to {max_loaded_references}",
+                            f"{label} handoff target does not match defaults.handoff.target_skill",
                         )
                     )
+                forbidden_fields = [
+                    field
+                    for field in ("route_id", "primary", "required_contract_ids", "supplements")
+                    if field in routing
+                ]
+                if forbidden_fields:
+                    issues.append(
+                        Issue(
+                            "EVAL_ROUTE",
+                            f"{label} handoff must not declare core route fields: {', '.join(forbidden_fields)}",
+                        )
+                    )
+                if routing.get("max_loaded_references") != 0:
+                    issues.append(Issue("EVAL_ROUTE", f"{label} handoff max_loaded_references must be 0"))
+            else:
+                route_id = routing.get("route_id")
+                route = route_map.get(route_id) if isinstance(route_id, str) else None
+                if route is None:
+                    issues.append(Issue("EVAL_ROUTE", f"{label} references unknown route: {route_id}"))
+                else:
+                    if routing.get("primary") != route.get("primary"):
+                        issues.append(Issue("EVAL_ROUTE", f"{label} primary does not match route {route_id}"))
+                    required_contract_ids = _as_string_list(routing.get("required_contract_ids"))
+                    if not required_contract_ids:
+                        issues.append(Issue("EVAL_ROUTE", f"{label} has no required_contract_ids"))
+                    route_contract_ids = set(_as_string_list(route.get("contract_ids")))
+                    for contract_id in required_contract_ids:
+                        if contract_id not in known_contract_ids or contract_id not in route_contract_ids:
+                            issues.append(
+                                Issue(
+                                    "EVAL_ROUTE",
+                                    f"{label} expects contract {contract_id} not supplied by route {route_id}",
+                                )
+                            )
+                    loaded = routing.get("max_loaded_references")
+                    if not isinstance(loaded, int) or isinstance(loaded, bool) or not 1 <= loaded <= max_loaded_references:
+                        issues.append(
+                            Issue(
+                                "EVAL_ROUTE",
+                                f"{label} max_loaded_references must be from 1 to {max_loaded_references}",
+                            )
+                        )
 
         assertions = case.get("assertions")
         if not isinstance(assertions, list) or not assertions:
